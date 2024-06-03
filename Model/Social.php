@@ -28,8 +28,6 @@ namespace Techyouknow\SocialLogin\Model;
 
 use Magento\Framework\App\ObjectManager;
 use Magento\Customer\Model\EmailNotificationInterface;
-use Magento\Reward\Model\RewardFactory;
-use Magento\Reward\Helper\Data as RewardData;
 use Magento\Customer\Model\CustomerRegistry;
 
 class Social extends \Magento\Framework\Model\AbstractModel
@@ -49,8 +47,6 @@ class Social extends \Magento\Framework\Model\AbstractModel
     private $socialNetworkCustomer;
     private $dateTime;
     protected $emailNotificationInterface;
-    protected $rewardFactory;
-    protected $rewardData;
     protected $_logger;
     private $customerRegistry;
 
@@ -71,8 +67,6 @@ class Social extends \Magento\Framework\Model\AbstractModel
         \Techyouknow\SocialLogin\Model\Repository\SocialLoginCustomerRepository $socialLoginCustomerRepository,
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
         EmailNotificationInterface $emailNotificationInterface,
-        RewardFactory $rewardFactory,
-        RewardData $rewardData,
         \Psr\Log\LoggerInterface $logger,
         CustomerRegistry $customerRegistry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
@@ -95,8 +89,6 @@ class Social extends \Magento\Framework\Model\AbstractModel
         $this->socialNetworkCustomer = $socialNetworkCustomer;
         $this->dateTime = $dateTime;
         $this->emailNotificationInterface = $emailNotificationInterface;
-        $this->rewardFactory = $rewardFactory;
-        $this->rewardData = $rewardData;
         $this->_logger = $logger;
         $this->customerRegistry = $customerRegistry;
     }
@@ -161,7 +153,6 @@ class Social extends \Magento\Framework\Model\AbstractModel
             $customer,
             EmailNotificationInterface::NEW_ACCOUNT_EMAIL_REGISTERED_NO_PASSWORD
         );
-        $this->assignRewardPoints($customer);
         return $this->customerModelFactory->create()->load($customer->getId());
     }
 
@@ -225,36 +216,5 @@ class Social extends \Magento\Framework\Model\AbstractModel
         }
 
         return $this->cookieMetadataFactory;
-    }
-
-    protected function assignRewardPoints($customer) {
-        if ($this->rewardData->isEnabledOnFront()) {
-            try {
-                $subscribeByDefault = $this->rewardData->getNotificationConfig(
-                    'subscribe_by_default',
-                    $this->storeManager->getStore()->getWebsiteId()
-                );
-                $customerModel = $this->customerRegistry
-                ->retrieveByEmail($customer->getEmail());
-                $customerModel->setRewardUpdateNotification($subscribeByDefault);
-                $customerModel->setRewardWarningNotification($subscribeByDefault);
-                $customerModel->getResource()
-                    ->saveAttribute($customerModel, 'reward_update_notification');
-                $customerModel->getResource()
-                ->saveAttribute($customerModel, 'reward_warning_notification');
-
-
-                $reward = $this->rewardFactory->create();
-                $reward
-                    ->setCustomer($customer)
-                    ->setActionEntity($customer)
-                    ->setStore($this->storeManager->getStore()->getId())
-                    ->setAction(\Magento\Reward\Model\Reward::REWARD_ACTION_REGISTER)
-                    ->updateRewardPoints();
-            } catch (\Exception $e) {
-                // Handle exceptions if necessary
-                $this->_logger->critical($e);
-            }
-        }
     }
 }
