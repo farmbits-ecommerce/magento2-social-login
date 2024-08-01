@@ -40,6 +40,7 @@ class Login extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
     private $customerModelFactory;
     private $socialNetworkCustomerRepository;
     private $customerSession;
+    private $socialHelper;
 
     public function __construct(
         Context $context,
